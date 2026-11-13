@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.urls import reverse
 from rest_framework import serializers
 
 from .models import Project, Report, Task
@@ -13,10 +14,25 @@ class TaskSerializer(serializers.ModelSerializer):
         ]
 
 
+def public_url(view_name: str, slug: str) -> str:
+    """Absolute URL built from the public FRONTEND_URL, not from the request.
+
+    Behind a proxy (Vite preview, nginx) the request's Host may be 127.0.0.1:8000,
+    which would leak into the links the professor sees.
+    """
+    return settings.FRONTEND_URL.rstrip("/") + reverse(view_name, kwargs={"slug": slug})
+
+
 class ReportListSerializer(serializers.ModelSerializer):
     kind_display = serializers.CharField(source="get_kind_display", read_only=True)
-    url = serializers.HyperlinkedIdentityField(view_name="report-detail", lookup_field="slug")
-    text_url = serializers.HyperlinkedIdentityField(view_name="report-text", lookup_field="slug")
+    url = serializers.SerializerMethodField()
+    text_url = serializers.SerializerMethodField()
+
+    def get_url(self, obj) -> str:
+        return public_url("report-detail", obj.slug)
+
+    def get_text_url(self, obj) -> str:
+        return public_url("report-text", obj.slug)
 
     class Meta:
         model = Report

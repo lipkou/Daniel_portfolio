@@ -30,6 +30,12 @@ class ReportApiTests(TestCase):
         self.assertEqual(data["tasks"][0]["title"], "Лінійний алгоритм")
         self.assertEqual(data["student"]["variant"], 8)
 
+    def test_links_use_public_url_not_request_host(self):
+        with self.settings(FRONTEND_URL="https://example.com"):
+            data = self.client.get("/api/reports/", HTTP_HOST="127.0.0.1:8000").json()
+        self.assertEqual(data[0]["text_url"], "https://example.com/api/reports/lab-1/text/")
+        self.assertEqual(data[0]["url"], "https://example.com/api/reports/lab-1/")
+
     def test_draft_is_hidden(self):
         self.assertEqual(self.client.get("/api/reports/draft/").status_code, 404)
 
