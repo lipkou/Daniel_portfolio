@@ -1,0 +1,125 @@
+{
+  "slug": "practice-1",
+  "kind": "practice",
+  "number": 1,
+  "discipline": "Основи програмування",
+  "topic": "Робота в ІСР Microsoft Visual Studio. Ввід та вивід інформації в С++",
+  "year": 2026,
+  "is_published": true,
+  "goal": "Сформувати навички організації роботи в середовищі Microsoft Visual Studio при написанні та відлагодженні програм на С++, а також навички форматного вводу-виводу інформації засобами С++.",
+  "theory": "• Програма у Visual Studio — це проєкт (набір файлів); консольний додаток найзручніший для вивчення С++.\n• Build: Compile (Ctrl+F7) створює .obj, Build Solution (F7) компонує .exe; помилки видно у вікні Output. Запуск без відлагодження — Ctrl+F5.\n• Консоль Windows за замовчуванням використовує кодову сторінку 866 — для кирилиці потрібні SetConsoleOutputCP(1251) і SetConsoleCP(1251) та шрифт Lucida Console.\n• Ввід-вивід у стилі С (<stdio.h>): scanf / printf зі специфікаторами формату (%c, %d, %u, %f, %lf, %e …) та керуючими символами \\n, \\t.\n• Потоковий ввід-вивід (<iostream>): cin >> та cout <<, endl, маніпулятори з <iomanip> (fixed, setprecision).\n• Потоки можна перенаправити у файли: lab2.exe < dani.in > dani.out.",
+  "conclusion": "У результаті виконання роботи освоєно створення, компіляцію та запуск консольного проєкту в Microsoft Visual Studio, налаштування коректного виводу кирилиці, а також ввід і вивід змінних стандартних типів двома способами — функціями printf / scanf з <stdio.h> та потоками cin / cout з <iostream>, включно з форматним виводом і перенаправленням потоків у файли. Модель вводу показує, як кожен тип обмежує допустимі значення (наприклад, unsigned не приймає від’ємних чисел, а float зберігає 3,14 лише приблизно).",
+  "tasks": [
+    {
+      "order": 1,
+      "title": "Перша програма в Microsoft Visual Studio",
+      "statement": "Створити консольний проєкт, додати файл і ввести програму, що виводить\n«Привіт! Це моя перша програма на С++!». Скомпілювати та запустити.",
+      "model": {
+        "inputs": [],
+        "symbols": {},
+        "nodes": [
+          {"id": "start", "type": "start", "text": "Початок", "x": 34, "y": 0},
+          {"id": "out", "type": "io", "text": "Виведення «Привіт! Це моя перша програма на С++!»", "x": 34, "y": 5, "message": "Привіт!\n Це моя перша програма на С++!"},
+          {"id": "end", "type": "end", "text": "Кінець", "x": 34, "y": 10}
+        ],
+        "edges": [
+          {"from": "start", "to": "out"},
+          {"from": "out", "to": "end"}
+        ]
+      },
+      "language": "cpp",
+      "code": "#include <stdio.h>\n\nint main()\n{\n    printf(\"Привіт!\\n Це моя перша програма на С++!\\n\");\n    return 0;\n}",
+      "output": "Build: 1 succeeded, 0 failed, 0 up-to-date, 0 skipped\n\n(консоль з кодовою сторінкою 866 показує кирилицю нечитабельними символами —\nце виправляється в завданні 2)"
+    },
+    {
+      "order": 2,
+      "title": "Коректний вивід кирилиці в консолі",
+      "statement": "Модифікувати програму: підключити <windows.h> і встановити кодову сторінку 1251\nдля вводу та виводу консолі; у властивостях вікна задати шрифт Lucida Console.",
+      "model": {
+        "note": "Файл з кодом має бути збережений у кодуванні Windows-1251, інакше кодова сторінка 1251 не допоможе.",
+        "inputs": [],
+        "symbols": {"out_cp": "CP виводу", "in_cp": "CP вводу"},
+        "nodes": [
+          {"id": "start", "type": "start", "text": "Початок", "x": 34, "y": 0},
+          {"id": "cp", "type": "process", "text": "SetConsoleOutputCP(1251); SetConsoleCP(1251)", "x": 34, "y": 5, "assign": [["out_cp", "1251"], ["in_cp", "1251"]]},
+          {"id": "out", "type": "io", "text": "Виведення «Привіт! Це моя перша програма на С++!»", "x": 34, "y": 10, "message": "Привіт!\n Це моя перша програма на С++!"},
+          {"id": "end", "type": "end", "text": "Кінець", "x": 34, "y": 15}
+        ],
+        "edges": [
+          {"from": "start", "to": "cp"},
+          {"from": "cp", "to": "out"},
+          {"from": "out", "to": "end"}
+        ]
+      },
+      "language": "cpp",
+      "code": "#include <windows.h>\n#include <stdio.h>\n\nint main()\n{\n    SetConsoleOutputCP(1251);   // кодова сторінка виводу\n    SetConsoleCP(1251);         // кодова сторінка вводу\n    printf(\"Привіт!\\n Це моя перша програма на С++!\\n\");\n    return 0;\n}",
+      "output": "Привіт!\n Це моя перша програма на С++!"
+    },
+    {
+      "order": 3,
+      "title": "Ввід-вивід змінних стандартних типів: <stdio.h>",
+      "statement": "Написати програму, що вводить і виводить змінні всіх стандартних типів\nза допомогою scanf / printf, використовуючи форматний вивід.",
+      "model": {
+        "note": "Модель перевіряє введення так, як його обмежує тип: int — ціле в межах ±2³¹, unsigned — ціле ≥ 0, char — один символ, float зберігається з 32-бітною точністю.",
+        "inputs": [
+          {"name": "c", "label": "c", "kind": "char", "default": "A"},
+          {"name": "i", "label": "i", "kind": "int", "default": -5},
+          {"name": "u", "label": "u", "kind": "uint", "default": 7},
+          {"name": "f", "label": "f", "kind": "float", "default": 3.14},
+          {"name": "d", "label": "d", "kind": "double", "default": 2.718281828}
+        ],
+        "presets": [
+          {"label": "типові", "values": {"c": "A", "i": -5, "u": 7, "f": 3.14, "d": 2.718281828}},
+          {"label": "межі int", "values": {"c": "Z", "i": 2147483647, "u": 4294967295, "f": 0.1, "d": 0.1}}
+        ],
+        "symbols": {},
+        "ctypes": {"c": "char", "i": "int", "u": "unsigned", "f": "float", "d": "double"},
+        "nodes": [
+          {"id": "start", "type": "start", "text": "Початок", "x": 34, "y": 0},
+          {"id": "in", "type": "io", "text": "Введення c, i, u, f, d  (scanf)", "x": 34, "y": 5, "input": ["c", "i", "u", "f", "d"]},
+          {"id": "out", "type": "io", "text": "Виведення c, i, u, f, d  (printf)", "x": 34, "y": 10, "print": ["c", "i", "u", "f", "d"]},
+          {"id": "end", "type": "end", "text": "Кінець", "x": 34, "y": 15}
+        ],
+        "edges": [
+          {"from": "start", "to": "in"},
+          {"from": "in", "to": "out"},
+          {"from": "out", "to": "end"}
+        ]
+      },
+      "language": "cpp",
+      "code": "#define _CRT_SECURE_NO_WARNINGS\n#include <stdio.h>\n#include <stdlib.h>\n#include <windows.h>\n\nint main() {\n    SetConsoleOutputCP(1251);\n    SetConsoleCP(1251);\n\n    char c; short s; int i; unsigned u; long l;\n    float f; double d; long double ld;\n\n    printf(\"Введіть char short int unsigned long float double long double:\\n\");\n    scanf(\" %c %hd %d %u %ld %f %lf %Lf\", &c, &s, &i, &u, &l, &f, &d, &ld);\n\n    printf(\"char        c  = '%c' (код %d)\\n\", c, c);\n    printf(\"short       s  = %hd\\n\", s);\n    printf(\"int         i  = %d\\n\", i);\n    printf(\"unsigned    u  = %u\\n\", u);\n    printf(\"long        l  = %ld\\n\", l);\n    printf(\"float       f  = %f\\t(%.10f)\\n\", f, f);\n    printf(\"double      d  = %.10lf\\n\", d);\n    printf(\"long double ld = %Lf\\n\", ld);\n    printf(\"i у 16-й: %#x, у 8-й: %#o; d в e-формі: %e\\n\", i, i, d);\n\n    system(\"pause\");\n    return 0;\n}",
+      "output": "Введіть char short int unsigned long float double long double:\nA 12 -5 7 100000 3.14 2.718281828 1.5\nchar        c  = 'A' (код 65)\nshort       s  = 12\nint         i  = -5\nunsigned    u  = 7\nlong        l  = 100000\nfloat       f  = 3.140000\t(3.1400001049)\ndouble      d  = 2.7182818280\nlong double ld = 1.500000\ni у 16-й: 0xfffffffb, у 8-й: 037777777773; d в e-формі: 2.718282e+00"
+    },
+    {
+      "order": 4,
+      "title": "Потоковий ввід-вивід <iostream> та перенаправлення потоків",
+      "statement": "Те саме за допомогою cin / cout. Використати форматний вивід і перенаправлення\nпотоків для роботи з файлами: lab2.exe < dani.in > dani.out.",
+      "model": {
+        "note": "Логіка та сама, що й у завданні 3, але дані читаються з файлу dani.in, а результат записується у dani.out — програма про це навіть «не знає», перенаправлення робить операційна система.",
+        "inputs": [
+          {"name": "c", "label": "c", "kind": "char", "default": "A"},
+          {"name": "i", "label": "i", "kind": "int", "default": -5},
+          {"name": "u", "label": "u", "kind": "uint", "default": 7},
+          {"name": "f", "label": "f", "kind": "float", "default": 3.14},
+          {"name": "d", "label": "d", "kind": "double", "default": 2.718281828}
+        ],
+        "symbols": {},
+        "ctypes": {"c": "char", "i": "int", "u": "unsigned", "f": "float", "d": "double"},
+        "nodes": [
+          {"id": "start", "type": "start", "text": "Початок", "x": 34, "y": 0},
+          {"id": "in", "type": "io", "text": "Введення c, i, u, f, d  (cin ← dani.in)", "x": 34, "y": 5, "input": ["c", "i", "u", "f", "d"]},
+          {"id": "out", "type": "io", "text": "Виведення c, i, u, f, d  (cout → dani.out)", "x": 34, "y": 10, "print": ["c", "i", "u", "f", "d"]},
+          {"id": "end", "type": "end", "text": "Кінець", "x": 34, "y": 15}
+        ],
+        "edges": [
+          {"from": "start", "to": "in"},
+          {"from": "in", "to": "out"},
+          {"from": "out", "to": "end"}
+        ]
+      },
+      "language": "cpp",
+      "code": "#include <iostream>\n#include <iomanip>\n#include <cstdlib>\n#include <windows.h>\nusing namespace std;\n\nint main() {\n    SetConsoleOutputCP(1251);\n    SetConsoleCP(1251);\n\n    char c; short s; int i; unsigned u; long l;\n    float f; double d; long double ld; bool b;\n\n    cout << \"Введіть char short int unsigned long float double long double bool(0/1):\" << endl;\n    cin >> c >> s >> i >> u >> l >> f >> d >> ld >> b;\n\n    cout << \"char        c  = '\" << c << \"' (код \" << int(c) << \")\" << endl\n         << \"short       s  = \" << s << endl\n         << \"int         i  = \" << i << endl\n         << \"unsigned    u  = \" << u << endl\n         << \"long        l  = \" << l << endl\n         << fixed << setprecision(10)\n         << \"float       f  = \" << f << endl\n         << \"double      d  = \" << d << endl\n         << \"long double ld = \" << ld << endl\n         << boolalpha\n         << \"bool        b  = \" << b << endl;\n\n    system(\"pause\");\n    return 0;\n}",
+      "output": "> type dani.in\nA 12 -5 7 100000 3.14 2.718281828 1.5 1\n\n> lab2.exe < dani.in > dani.out\n> type dani.out\nВведіть char short int unsigned long float double long double bool(0/1):\nchar        c  = 'A' (код 65)\nshort       s  = 12\nint         i  = -5\nunsigned    u  = 7\nlong        l  = 100000\nfloat       f  = 3.1400001049\ndouble      d  = 2.7182818280\nlong double ld = 1.5000000000\nbool        b  = true\nДля продовження натисніть будь-яку клавішу . . ."
+    }
+  ]
+}

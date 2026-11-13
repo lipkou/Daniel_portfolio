@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Frontend (Node / Vite)
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Django
+backend/staticfiles/
