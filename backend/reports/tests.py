@@ -39,6 +39,20 @@ class ReportApiTests(TestCase):
     def test_draft_is_hidden(self):
         self.assertEqual(self.client.get("/api/reports/draft/").status_code, 404)
 
+    def test_text_endpoint_honours_any_reasonable_accept_header(self):
+        # Swagger UI sends `Accept: text/plain`; curl sends `*/*`; browsers send text/html,…
+        for accept in ["text/plain", "*/*", "text/html,application/xhtml+xml,*/*;q=0.8", None]:
+            headers = {"HTTP_ACCEPT": accept} if accept else {}
+            resp = self.client.get("/api/reports/lab-1/text/", **headers)
+            self.assertEqual(resp.status_code, 200, accept)
+            self.assertTrue(resp["Content-Type"].startswith("text/plain"), accept)
+            self.assertIn("ЗВІТ", resp.content.decode("utf-8"))
+
+    def test_text_endpoint_404_is_plain_text(self):
+        resp = self.client.get("/api/reports/nope/text/", HTTP_ACCEPT="text/plain")
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotIn("{", resp.content.decode("utf-8"))
+
     def test_plain_text_report(self):
         resp = self.client.get("/api/reports/lab-1/text/")
         self.assertEqual(resp.status_code, 200)
