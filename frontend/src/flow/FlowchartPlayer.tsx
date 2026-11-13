@@ -142,7 +142,10 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
   const [edge, setEdge] = useState<number | null>(null);
   const [token, setToken] = useState<Point | null>(null);
   const [speed, setSpeed] = useState(1);
+  /** visits in the current run — drives the blue highlight and ×N badges */
   const [visits, setVisits] = useState<Record<string, number>>({});
+  /** blocks executed in any run since the last reset — drives coverage / dashed "cold" blocks */
+  const [everVisited, setEverVisited] = useState<Set<string>>(new Set());
   const [runs, setRuns] = useState(0);
   const [traversed, setTraversed] = useState<Set<number>>(new Set());
   const stopAfterEdge = useRef(false);
@@ -160,6 +163,9 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
     setEdge(null);
     setToken(null);
     setTraversed(new Set());
+    setVisits({});
+    setEverVisited(new Set());
+    setRuns(0);
   }, [model]);
 
   const begin = (stepMode: boolean) => {
@@ -168,6 +174,7 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
     if (phase === "ready" || phase === "done") {
       setSim(initialState(model));
       setTraversed(new Set());
+      setVisits({}); // new run → fresh highlight; coverage (everVisited) is kept
       setToken(null);
       setEdge(null);
       setPhase("node");
@@ -182,6 +189,7 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
     const t = setTimeout(() => {
       const r = step(model, sim, inputsRef.current);
       setVisits((v) => ({ ...v, [sim.current]: (v[sim.current] ?? 0) + 1 }));
+      setEverVisited((s) => (s.has(sim.current) ? s : new Set(s).add(sim.current)));
       setSim(r.state);
       if (r.jump) {
         // control moved into a subroutine — highlight its entry next, no edge to animate
@@ -235,7 +243,7 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
 
   // --- derived view state ---
   const current = phase === "ready" ? null : sim.current;
-  const visitedCount = model.nodes.filter((n) => visits[n.id]).length;
+  const visitedCount = model.nodes.filter((n) => everVisited.has(n.id)).length;
   const cold = runs > 0 && phase !== "node" && phase !== "edge";
   const scalarVars = Object.entries(sim.vars);
   const label = (name: string) => model.symbols?.[name] ?? name;
@@ -244,7 +252,7 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
     const c: string[] = [];
     if (n.id === current) c.push(sim.error ? "is-error" : phase === "done" ? "is-done" : "is-active");
     else if (visits[n.id]) c.push("is-visited");
-    else if (cold) c.push("is-cold");
+    else if (cold && !everVisited.has(n.id)) c.push("is-cold");
     return c.join(" ");
   };
 
@@ -409,6 +417,7 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
             <h4>Покриття</h4>
             <p className="coverage">
               {visitedCount} / {model.nodes.length} блоків виконувались
+              {runs > 1 && ` за ${runs} ${plural(runs, "запуск", "запуски", "запусків")}`}
               {runs > 0 && visitedCount < model.nodes.length && (
                 <span className="muted"> · пунктиром — ще жодного разу</span>
               )}
