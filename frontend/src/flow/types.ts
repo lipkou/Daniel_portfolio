@@ -1,4 +1,26 @@
-export type NodeType = "start" | "end" | "process" | "io" | "decision" | "loop";
+export type NodeType =
+  | "start"
+  | "end"
+  | "process"
+  | "io"
+  | "decision"
+  | "loop"
+  /** subroutine call (predefined process) */
+  | "call"
+  /** subroutine entry / exit */
+  | "entry"
+  | "return";
+
+export interface CallSpec {
+  /** id of the subroutine's `entry` node */
+  entry: string;
+  /** [parameter, argument expression evaluated in the caller] */
+  args: [string, string][];
+  /** caller variable that receives the result */
+  result: string;
+  /** subroutine variable holding the return value */
+  returns: string;
+}
 export type Side = "top" | "bottom" | "left" | "right";
 export type When = "yes" | "no" | "body" | "exit";
 
@@ -16,6 +38,7 @@ export interface FlowNode {
   message?: string;
   cond?: string;
   loop?: { var: string; from: string; to: string; step: string };
+  call?: CallSpec;
 }
 
 export interface FlowEdge {

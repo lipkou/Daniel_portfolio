@@ -249,6 +249,8 @@ button { font: inherit; }
 .flowchart { display: block; max-width: 100%; height: auto; margin: 0 auto; }
 .state { border-left: 1px solid var(--line); padding: 16px 18px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .state h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); margin-bottom: 8px; }
+.frame-tag { color: var(--accent); text-transform: none; letter-spacing: 0; }
+.fc-call > path:first-child { fill: var(--node-fill); }
 .vars { margin: 0; display: grid; gap: 4px; font-family: var(--mono); font-size: 0.85rem; }
 .vars div { display: flex; gap: 8px; }
 .vars dt { min-width: 2.5em; color: var(--accent); }

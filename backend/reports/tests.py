@@ -102,7 +102,7 @@ class FlowchartTests(TestCase):
 
         call_command("load_reports", stdout=StringIO())
         call_command("load_reports", stdout=StringIO())  # idempotent
-        self.assertEqual(Report.objects.get(slug="lab-1").tasks.count(), 3)
+        self.assertEqual(Report.objects.get(slug="lab-1").tasks.count(), 4)
         self.assertEqual(Report.objects.get(slug="lab-2").tasks.count(), 2)
         self.assertEqual(Report.objects.get(slug="practice-1").tasks.count(), 4)
 

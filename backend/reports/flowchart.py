@@ -17,19 +17,23 @@ from __future__ import annotations
 
 Point = tuple[int, int]
 
-NODE_TYPES = {"start", "end", "process", "io", "decision", "loop"}
+NODE_TYPES = {"start", "end", "process", "io", "decision", "loop", "call", "entry", "return"}
 SIDES = {"top", "bottom", "left", "right"}
 
 LEGEND = (
-    "╭───╮ початок / кінець    ┌───┐ обчислення    / ___ / введення / виведення\n"
-    "<   > умова (так / ні)     <═══> заголовок циклу"
+    "╭───╮ початок / кінець / вхід і вихід підпрограми    ┌───┐ обчислення\n"
+    "/ ___ / введення / виведення    <   > умова (так / ні)    <═══> цикл\n"
+    "┌┬───┬┐ виклик підпрограми"
 )
+
+#: shapes that are 2 columns wider than the text box (slanted sides / double walls)
+_WIDE = {"io", "call"}
 
 
 # --- geometry (keep in sync with frontend/src/flow/geometry.ts) -------------
 
 def shape_width(node: dict) -> int:
-    extra = 6 if node["type"] == "io" else 4
+    extra = 6 if node["type"] in _WIDE else 4
     return len(node["text"]) + extra
 
 
@@ -90,8 +94,10 @@ def shape_rows(node: dict) -> list[str]:
     t = node["text"]
     n = len(t)
     kind = node["type"]
-    if kind in ("start", "end"):
+    if kind in ("start", "end", "entry", "return"):
         return ["╭" + "─" * (n + 2) + "╮", "│ " + t + " │", "╰" + "─" * (n + 2) + "╯"]
+    if kind == "call":
+        return ["┌┬" + "─" * (n + 2) + "┬┐", "││ " + t + " ││", "└┴" + "─" * (n + 2) + "┴┘"]
     if kind == "process":
         return ["┌" + "─" * (n + 2) + "┐", "│ " + t + " │", "└" + "─" * (n + 2) + "┘"]
     if kind == "io":
@@ -196,9 +202,17 @@ def validate(model: dict) -> list[str]:
         outgoing.setdefault(e["from"], []).append(e)
     for n in model.get("nodes", []):
         whens = sorted(e.get("when", "") for e in outgoing.get(n["id"], []))
-        expected = {"end": [], "decision": ["no", "yes"], "loop": ["body", "exit"]}.get(
-            n["type"], [""]
-        )
+        expected = {
+            "end": [], "return": [], "decision": ["no", "yes"], "loop": ["body", "exit"],
+        }.get(n["type"], [""])
         if whens != expected:
             problems.append(f"{n['id']}: outgoing edges {whens}, expected {expected}")
+        if n["type"] == "call":
+            spec = n.get("call") or {}
+            entry = next((m for m in model["nodes"] if m["id"] == spec.get("entry")), None)
+            if not entry or entry["type"] != "entry":
+                problems.append(f"{n['id']}: call.entry must point to an 'entry' node")
+            for key in ("args", "result", "returns"):
+                if key not in spec:
+                    problems.append(f"{n['id']}: call.{key} is missing")
     return problems

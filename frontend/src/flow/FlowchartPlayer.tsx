@@ -28,8 +28,19 @@ function Shape({ node, cls, visits }: { node: FlowNode; cls: string; visits: num
   switch (node.type) {
     case "start":
     case "end":
+    case "entry":
+    case "return":
       shape = <rect x={b.x0} y={b.y0} width={b.x1 - b.x0} height={h} rx={h / 2} />;
       break;
+    case "call": {
+      const s = CW * 0.9;
+      shape = (
+        <path
+          d={`M${b.x0},${b.y0} H${b.x1} V${b.y1} H${b.x0} Z M${b.x0 + s},${b.y0} V${b.y1} M${b.x1 - s},${b.y0} V${b.y1}`}
+        />
+      );
+      break;
+    }
     case "process":
       shape = <rect x={b.x0} y={b.y0} width={b.x1 - b.x0} height={h} rx={3} />;
       break;
@@ -172,6 +183,12 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
       const r = step(model, sim, inputsRef.current);
       setVisits((v) => ({ ...v, [sim.current]: (v[sim.current] ?? 0) + 1 }));
       setSim(r.state);
+      if (r.jump) {
+        // control moved into a subroutine — highlight its entry next, no edge to animate
+        setToken(null);
+        if (stopAfterEdge.current) setPlaying(false);
+        return;
+      }
       if (r.edge === null) {
         setPhase("done");
         setPlaying(false);
@@ -358,7 +375,12 @@ export function FlowchartPlayer({ model, id }: { model: FlowModel; id: string })
 
         <aside className="state">
           <section>
-            <h4>Змінні</h4>
+            <h4>
+              Змінні
+              {sim.stack.length > 0 && (
+                <span className="frame-tag"> · всередині {sim.stack[sim.stack.length - 1].label}</span>
+              )}
+            </h4>
             {scalarVars.length === 0 ? (
               <p className="muted">поки порожньо</p>
             ) : (

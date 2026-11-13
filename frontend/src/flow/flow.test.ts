@@ -7,7 +7,30 @@ import { edgeCells } from "./geometry";
 import { formatNumber, parseArray, resolveInput, runAll } from "./interpreter";
 import type { FlowModel } from "./types";
 
-const [linear, branching, cyclic] = lab1.tasks.map((t) => t.model as unknown as FlowModel);
+const [linear, branching, cyclic, subroutine] = lab1.tasks.map((t) => t.model as unknown as FlowModel);
+
+describe("lab-1 task 4 (control task, subroutine)", () => {
+  const F = (t: number, a: number) => Math.tan(1 - a * t) ** 2;
+
+  it("control data: x < 3y → z = F(y, a)", () => {
+    const { state, visited } = runAll(subroutine, { x: 1.5, y: 2.5, a: 0.3 });
+    expect(state.vars.z).toBeCloseTo(F(2.5, 0.3), 12);
+    expect(visited).toContain("cy");
+    expect(visited).not.toContain("cx");
+    expect(visited).toContain("f_body");
+  });
+  it("x ≥ 3y → z = F(x, a)", () => {
+    const { state, visited } = runAll(subroutine, { x: 9, y: 2, a: 0.3 });
+    expect(state.vars.z).toBeCloseTo(F(9, 0.3), 12);
+    expect(visited).toContain("cx");
+  });
+  it("subroutine locals do not leak into the main program", () => {
+    const { state } = runAll(subroutine, { x: 1.5, y: 2.5, a: 0.3 });
+    expect(state.stack).toHaveLength(0);
+    expect(Object.keys(state.vars).sort()).toEqual(["a", "x", "y", "z"]);
+    expect(state.log.some((l) => l.text.startsWith("→ виклик F(t, a)"))).toBe(true);
+  });
+});
 
 describe("expr", () => {
   it("respects precedence and right-assoc power", () => {
@@ -86,7 +109,7 @@ describe("lab-1 task 3 (cyclic)", () => {
 
 const [triangle, heron] = lab2.tasks.map((t) => t.model as unknown as FlowModel);
 const practiceModels = practice1.tasks.map((t) => t.model as unknown as FlowModel);
-const ALL = [linear, branching, cyclic, triangle, heron, ...practiceModels];
+const ALL = [linear, branching, cyclic, subroutine, triangle, heron, ...practiceModels];
 
 describe("lab-2", () => {
   it("triangle check", () => {

@@ -7,8 +7,20 @@ export interface LogLine {
   text: string;
 }
 
+/** A suspended caller while a subroutine runs. */
+export interface Frame {
+  callNode: string;
+  vars: Record<string, Value>;
+  result: string;
+  returns: string;
+  /** e.g. "F(t, a)" — for the UI */
+  label: string;
+}
+
 export interface SimState {
   vars: Record<string, Value>;
+  /** call stack: innermost caller last */
+  stack: Frame[];
   current: string;
   log: LogLine[];
   /** loop node id → loop currently active */
@@ -20,9 +32,13 @@ export interface SimState {
 
 export interface StepResult {
   state: SimState;
-  /** index into model.edges that is taken next, or null when finished */
+  /** index into model.edges that is taken next, or null when finished / jumped */
   edge: number | null;
+  /** true when control jumped without an edge (subroutine call) */
+  jump?: boolean;
 }
+
+export const MAX_DEPTH = 50;
 
 export const MAX_STEPS = 2000;
 
@@ -62,7 +78,7 @@ export function displayName(model: FlowModel, target: string, vars: Record<strin
 export function initialState(model: FlowModel): SimState {
   const start = model.nodes.find((n) => n.type === "start");
   if (!start) throw new Error("model has no start node");
-  return { vars: {}, current: start.id, log: [], loops: {}, steps: 0, done: false };
+  return { vars: {}, stack: [], current: start.id, log: [], loops: {}, steps: 0, done: false };
 }
 
 function outgoing(model: FlowModel, nodeId: string): [number, FlowEdge][] {
@@ -95,6 +111,7 @@ export function step(model: FlowModel, prev: SimState, inputs: Record<string, Va
   const state: SimState = {
     ...prev,
     vars: { ...prev.vars },
+    stack: [...prev.stack],
     log: [...prev.log],
     loops: { ...prev.loops },
     steps: prev.steps + 1,
@@ -108,7 +125,34 @@ export function step(model: FlowModel, prev: SimState, inputs: Record<string, Va
   try {
     switch (node.type) {
       case "start":
+      case "entry":
         return { state, edge: pick(model, node) };
+
+      case "call": {
+        const spec = node.call!;
+        if (state.stack.length >= MAX_DEPTH) throw new ExprError(`Глибина викликів понад ${MAX_DEPTH}`);
+        const params: Record<string, Value> = {};
+        for (const [param, arg] of spec.args) params[param] = evaluate(arg, state.vars);
+        const entry = model.nodes.find((n) => n.id === spec.entry)!;
+        const label = entry.text.replace(/^Вхід\s*/, "");
+        state.stack.push({ callNode: node.id, vars: state.vars, result: spec.result, returns: spec.returns, label });
+        state.vars = params;
+        const shown = spec.args.map(([p]) => `${name(p)} = ${formatValue(params[p])}`).join("; ");
+        state.log.push({ kind: "info", text: `→ виклик ${label}: ${shown}` });
+        return { state: { ...state, current: entry.id }, edge: null, jump: true };
+      }
+
+      case "return": {
+        const frame = state.stack.pop();
+        if (!frame) throw new ExprError("«Вихід» без виклику підпрограми");
+        if (!(frame.returns in state.vars)) throw new ExprError(`Підпрограма не обчислила ${frame.returns}`);
+        const value = state.vars[frame.returns];
+        state.vars = frame.vars;
+        assignTo(state.vars, frame.result, value);
+        state.log.push({ kind: "info", text: `← повернення: ${name(frame.result)} = ${formatValue(value)}` });
+        const caller = model.nodes.find((n) => n.id === frame.callNode)!;
+        return { state: { ...state, current: caller.id }, edge: pick(model, caller) };
+      }
 
       case "end":
         state.log.push({ kind: "info", text: "Кінець алгоритму" });
@@ -177,6 +221,7 @@ export function runAll(model: FlowModel, inputs: Record<string, Value>) {
     visited.push(state.current);
     const r = step(model, state, inputs);
     state = r.state;
+    if (r.jump) continue;
     if (r.edge === null) return { state, visited };
     state = follow(model, state, r.edge);
   }

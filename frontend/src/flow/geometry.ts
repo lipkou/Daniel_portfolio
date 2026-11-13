@@ -9,7 +9,7 @@ export type Point = [number, number];
 export const textLen = (s: string) => [...s].length;
 
 export function shapeWidth(node: FlowNode): number {
-  return textLen(node.text) + (node.type === "io" ? 6 : 4);
+  return textLen(node.text) + (node.type === "io" || node.type === "call" ? 6 : 4);
 }
 
 export function bounds(node: FlowNode) {
